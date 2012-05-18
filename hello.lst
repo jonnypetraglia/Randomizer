@@ -1,0 +1,28 @@
+     1                                  ;  hello.asm  a first program for nasm for Linux, Intel, gcc
+     2                                  ;
+     3                                  ; assemble:     nasm -f elf -l hello.lst  hello.asm
+     4                                  ; link:         gcc -o hello  hello.o
+     5                                  ; run:          hello 
+     6                                  ; output is:    Hello World 
+     7                                  
+     8                                          SECTION .data           ; data section
+     9 00000000 6D746E640A                      butts: db "mtnd",10
+    10                                  
+    11                                          SECTION .text           ; code section
+    12                                          global main             ; make label available to linker
+    13                                  main:                           ; standard  gcc  entry point
+    14                                  
+    15 00000000 89E5                            mov     ebp, esp
+    16 00000002 83C504                          add     ebp, 4
+    17                                          mov     [butts], [ebp]
+    18          ******************       error: invalid combination of opcode and operands
+    19 00000005 B9[00000000]                    mov     ecx, butts
+    20 0000000A BA05000000                      mov     edx, 5
+    21                                  
+    22 0000000F BB01000000                      mov     ebx,1           ; arg1, where to write, screen
+    23 00000014 B804000000                      mov     eax,4           ; write sysout command to int 80 hex
+    24 00000019 CD80                            int     0x80            ; interrupt 80 hex, call kernel
+    25                                          
+    26 0000001B BB00000000                      mov     ebx,0           ; exit code, 0=normal
+    27 00000020 B801000000                      mov     eax,1           ; exit command to kernel
+    28 00000025 CD80                            int     0x80            ; interrupt 80 hex, call kernel 

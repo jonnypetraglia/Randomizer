@@ -1,0 +1,126 @@
+?if first arg = "-h"
+    display message
+    quit
+if there are no arguments
+    folder = current directory
+    recurse = true
+    filetype_count = all
+else
+    if the folder doesn't exist
+        exit the program
+?    if the second argument = "-r"
+        recurse = false
+    else
+        recurse = on
+??      filetype_count = num_of_args - offset
+counter = 0
+if filetype_count = 0
+    extensions = all
+
+for each filetype
+    if recurse = true
+        for each subfolder
+            recurse
+    if it exists
+        add to a list of files for *.filetype
+
+choose a random value up to size of list
+open/run that item
+
+
+
+1. Arguments
+
+        (%esp)   argc, count of arguments (integer)
+        4(%esp)      char *argv (pointer to first command line argument)
+        ...       pointers to the rest of the command line arguments
+        ?(%esp) NULL pointer
+        ...       pointers to environment variables
+        ??(%esp)     NULL pointer
+
+2. Exit codes
+
+        mov     eax,1           ; the exit syscall number
+        mov     ebx,0           ; have an exit code of 0
+        int     80h             ; interrupt 80h, the thing that pokes the kernel
+                                ; and says, "do this"
+
+        The preceding code is equivalent to having a "return 0" at the end of your main
+        function. 
+
+3. FileExist()
+        pop     ebx             ; argc
+        pop     ebx             ; argv[0]
+        pop     ebx             ; the first real arg, a filename 
+
+
+        mov     eax,5           ; the syscall number for open()
+                                ; we already have the filename in ebx
+
+        mov     ecx,0           ; O_RDONLY, defined in fcntl.h
+
+        int     80h             ; call the kernel
+
+                                ; now we have a file descriptor in eax
+
+        test    eax,eax         ; lets make sure it is valid
+        jns     file_function   ; if the file descriptor does not have the
+                                ; sign flag ( which means it is less than 0 )
+                                ; jump to file_function
+
+        mov     ebx,eax         ; there was an error, save the errno in ebx
+        mov     eax,1           ; put the exit syscall number in eax
+        int     80h             ; bail out
+        ----
+        INT 21h / AH= 3Dh - open existing file.
+
+        AL = access and sharing modes:
+
+
+        mov al, 0   ; read 
+        mov al, 1   ; write 
+        mov al, 2   ; read/write 
+
+        INT 21h / AH= 3Eh - close file.
+
+        BX = file handle
+
+        Return:
+
+        CF clear if successful, AX destroyed.
+        CF set on error, AX = error code (06h). 
+
+4. (A)
+    malloc for a list/each item
+   (B)
+    run through once to count them, then pick a random number then run again to find the random one
+5. Random number
+
+        ; ========================= RANDOM.INC =========================
+        ; Call with,    NOTHING
+
+        ; Returns,      AL = random number between 0-255,
+        ;               AX may be a random number too ?
+        ;               DW RNDNUM holds AX=random_number_in AL
+        SEED    DW 3749h
+        RNDNUM  DW 0
+        align 16
+        RANDOM:
+                PUSH    DX
+                MOV     AX,[SEED]       ;; AX = seed
+                MOV     DX,8405h        ;; DX = 8405h
+                MUL     DX              ;; MUL (8405h * SEED) into dword DX:AX
+        ;
+                CMP     AX,[SEED]
+                JNZ     GOTSEED         ;; if new SEED = old SEED, alter SEED
+                MOV     AH,DL
+                INC     AX
+        GOTSEED:
+                MOV     WORD [SEED],AX  ;; We have a new seed, so store it
+                MOV     AX,DX           ;; AL = random number
+                MOV     WORD [RNDNUM],AX
+                POP     DX
+                RET
+
+6. Running an item
+
